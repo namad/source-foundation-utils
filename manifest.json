@@ -1,0 +1,41 @@
+{
+    "name": "Source Foundation Utils",
+    "id": "129703134198038399a",
+    "api": "1.0.0",
+    "main": "dist/plugin.js",
+    "networkAccess": {
+        "allowedDomains": [
+            "none"
+        ]
+    },
+    "documentAccess": "dynamic-page",
+    "editorType": [
+        "figma"
+    ],
+    "menu": [
+        {
+            "command": "fixLayers",
+            "name": "Fix Layers"
+        },
+        {
+            "command": "exportStyleTemplates",
+            "name": "Export Style Template"
+        },
+        {
+            "command": "importStyleTemplates",
+            "name": "Import Style Template"
+        },
+        {
+            "command": "bindToStyles",
+            "name": "Create Color Styles"
+        },
+        {
+            "command": "updateElevationComponents",
+            "name": "Update Elevation Components"
+        },
+        {
+            "command": "setPlayground",
+            "name": "Set Playground"
+        }
+    ]
+}
