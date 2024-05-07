@@ -1,6 +1,6 @@
 {
-    "name": "Source Foundation Utils",
-    "id": "129703134198038399a",
+    "name": "Source DS Utils",
+    "id": "1369680060657648796",
     "api": "1.0.0",
     "main": "dist/plugin.js",
     "networkAccess": {
@@ -14,20 +14,40 @@
     ],
     "menu": [
         {
+            "command": "fixComponents",
+            "name": "Fix Component Layers"
+        },
+        {
             "command": "fixLayers",
             "name": "Fix Layers"
         },
         {
-            "command": "exportStyleTemplates",
-            "name": "Export Style Template"
+            "command": "exportComponentTemplates",
+            "name": "Export Component Template"
         },
         {
             "command": "importStyleTemplates",
-            "name": "Import Style Template"
+            "name": "Import Component Template",
+            "parameters": [
+                {
+                    "name": "Overwrite",
+                    "key": "overwrite",
+                    "description": "Overwrite or merge the content",
+                    "optional": false
+                }
+            ]
         },
         {
             "command": "bindToStyles",
             "name": "Create Color Styles"
+        },
+        {
+            "command": "cloneComponent",
+            "name": "Clone Component"
+        },
+        {
+            "command": "makeLocalComponent",
+            "name": "Make Local Component"
         },
         {
             "command": "updateElevationComponents",
