@@ -34,9 +34,6 @@ const paramsSuggestions = {
     });
 
     figma.on('run', async ({ command, parameters }: RunEvent) => {
-
-        debugger;
-
         if (command == "bindToStyles") {
             bindVariablesAndStyles();
             figma.closePlugin();
