@@ -14,20 +14,32 @@
     ],
     "menu": [
         {
-            "command": "fixComponents",
-            "name": "Fix Component Layers"
-        },
-        {
             "command": "fixLayers",
             "name": "Fix Layers"
         },
         {
+            "command": "makeLocalComponent",
+            "name": "Make local component"
+        },
+        {
+            "command": "getInstanceSwapProps",
+            "name": "Slot to local component",
+            "parameters": [
+                {
+                    "name": "Select property",
+                    "key": "selectionData",
+                    "description": "Select instance swap property to create local component",
+                    "optional": false
+                }
+            ]            
+        },
+        {
             "command": "exportComponentTemplates",
-            "name": "Export Component Template"
+            "name": "Export component template"
         },
         {
             "command": "importStyleTemplates",
-            "name": "Import Component Template",
+            "name": "Import component template",
             "parameters": [
                 {
                     "name": "Overwrite",
@@ -39,16 +51,13 @@
         },
         {
             "command": "bindToStyles",
-            "name": "Create Color Styles"
+            "name": "Create color styles"
         },
         {
             "command": "cloneComponent",
-            "name": "Clone Component"
+            "name": "Clone component"
         },
-        {
-            "command": "makeLocalComponent",
-            "name": "Make Local Component"
-        },
+       
         {
             "command": "updateElevationComponents",
             "name": "Update Elevation Components"

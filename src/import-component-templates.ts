@@ -9,13 +9,14 @@ let skippedLayersCount = 0;
 let missingLayersCount = 0;
 
 //cache all component sets to speed up the process
-let componentSets;
+let componentSets: (ComponentNode | ComponentSetNode)[]
 
-function getComponentSets() {
+async function getComponentSets() {
     if (!componentSets) {
         console.log(`First time look up, running slow...`)
 
         figma.skipInvisibleInstanceChildren = true;
+        await figma.currentPage.loadAsync();
         componentSets = figma.currentPage.findAllWithCriteria({
             types: ['COMPONENT', 'COMPONENT_SET']
         });
@@ -24,8 +25,10 @@ function getComponentSets() {
 }
 
 
-function findComponent(cmpName: string): ComponentNode | ComponentSetNode {
-    let masterComponent = getComponentSets().find(item => item.name === cmpName);
+async function findComponent(cmpName: string): Promise<ComponentNode | ComponentSetNode> {
+    let componentSets = await getComponentSets();  
+    let masterComponent = componentSets.find(item => item.name === cmpName);
+    
     return masterComponent || null;
 }
 
@@ -56,11 +59,11 @@ export async function importComponentTemplates(overwrite = false) {
     }[] = [];
 
 
-    _nodes.forEach(node => {
+    for (const node of _nodes) {
         if (node.type != 'FRAME' || node.visible != true) {
-            return; // skip everyting that is not a regular frame
+            continue; // skip everyting that is not a regular frame
         }
-        const componentNode = findComponent(node.name);
+        const componentNode = await findComponent(node.name);
         if (componentNode) {
             matches.push({
                 source: node as FrameNode,
@@ -70,7 +73,7 @@ export async function importComponentTemplates(overwrite = false) {
         else {
             console.warn(`Cannot find component node ${node.name}`)
         }
-    })
+    }
 
     const total = matches.length;
     totalLayersCount = total;
@@ -80,6 +83,8 @@ export async function importComponentTemplates(overwrite = false) {
         const percent = Math.round(((total - matches.length) / total) * 100);
         const msg = `${percent}% done. Working on layer ${total - matches.length} out of ${total}`;
 
+        if(percent > 60) debugger
+        
         console.log(msg);
 
         if (matchData.target.type == 'COMPONENT_SET') {
@@ -136,13 +141,18 @@ async function processNode(sourceFrame: FrameNode | InstanceNode, targetComponen
 
         resizeAndReposition(sourceNode, targetNode);
 
+        if(sourceNode.type == 'VECTOR' && targetNode.type == 'VECTOR') {
+            await mergeVectors(sourceNode, targetNode);
+        }
+
         if (sourceNode.type == 'INSTANCE' && targetNode.type == 'INSTANCE') {
             await copyOverrides(sourceNode, targetNode, targetComponent);
         }
         if (
             sourceNode.type == 'FRAME' && targetNode.type == 'FRAME' ||
             sourceNode.type == 'INSTANCE' && targetNode.type == 'INSTANCE' ||
-            sourceNode.type == 'BOOLEAN_OPERATION' && targetNode.type == 'BOOLEAN_OPERATION'
+            sourceNode.type == 'BOOLEAN_OPERATION' && targetNode.type == 'BOOLEAN_OPERATION' || 
+            sourceNode.type == 'VECTOR' && targetNode.type == 'VECTOR'
         ) {
             await copyNodeProps(sourceNode, targetNode);
         }
@@ -151,7 +161,7 @@ async function processNode(sourceFrame: FrameNode | InstanceNode, targetComponen
     await delayAsync(10);
 }
 
-async function copyNodeProps(sourceNode: FrameNode | BooleanOperationNode | InstanceNode, targetNode: FrameNode | BooleanOperationNode | InstanceNode) {
+async function copyNodeProps(sourceNode: FrameNode | BooleanOperationNode | InstanceNode | VectorNode, targetNode: FrameNode | BooleanOperationNode | InstanceNode | VectorNode) {
     targetNode.fills = _clone(sourceNode.fills);
     targetNode.effects = _clone(sourceNode.effects);
     targetNode.strokes = _clone(sourceNode.strokes);
@@ -159,6 +169,7 @@ async function copyNodeProps(sourceNode: FrameNode | BooleanOperationNode | Inst
     targetNode.visible = _clone(sourceNode.visible);
     targetNode.isMask = _clone(sourceNode.isMask);
     targetNode.strokeAlign = _clone(sourceNode.strokeAlign);
+    targetNode.blendMode = _clone(sourceNode.blendMode);
 
     targetNode.strokeAlign = _clone(sourceNode.strokeAlign);
     targetNode.strokeCap = _clone(sourceNode.strokeCap);
@@ -340,5 +351,10 @@ async function bindVariable(sourceFrame: SceneNode, targetComponent: SceneNode, 
     }
 
     return targetComponent;
+}
+
+async function mergeVectors(sourceNode: VectorNode, targetNode: VectorNode) {
+    const sourceVectorNetwork = _clone(sourceNode.vectorNetwork);
+    await targetNode.setVectorNetworkAsync(sourceVectorNetwork);
 }
 

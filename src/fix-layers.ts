@@ -41,12 +41,19 @@ export async function processComponents() {
 
 export async function processFrames() {
     figma.skipInvisibleInstanceChildren = false;
-    let frames: SceneNode[] = [];
+    let frames: {
+        parent: SceneNode;
+        children: SceneNode[];
+    }[] = [];
+
+    let updated = 0,
+        skipped = 0,
+        failed = 0;
 
     if (figma.currentPage.selection.length) {
-        figma.currentPage.selection.forEach((node: SceneNode) => {
-            if ('findAll' in node) {
-                const children = node.findAll((n: FrameNode) => {
+        figma.currentPage.selection.forEach((parent: SceneNode) => {
+            if ('findAll' in parent) {
+                const children = parent.findAll((n: FrameNode) => {
                     return n.layoutPositioning == 'ABSOLUTE'
                         && n.width > 0
                         && n.height > 0
@@ -54,22 +61,33 @@ export async function processFrames() {
                         && n.constraints.vertical === 'STRETCH';
                 });
 
-                frames = frames.concat(children)
+                frames.push({ parent, children })
             }
         })
     }
-    else {
-        return 0;
+
+    while (frames.length) {
+        const itemToFix = frames.shift();
+        const reslt = await fixLayers(itemToFix.children as FrameNode[], itemToFix.parent);
+
+        updated += reslt.updated;
+        skipped = reslt.skipped;
+        failed = reslt.failed;
     }
 
-    const size = frames.length;
-    await fixLayers(frames as FrameNode[]);
-
-    return size;
+    return {
+        updated,
+        skipped,
+        failed 
+    };
 
 }
 
-async function fixLayers(nodes: FrameNode[], component?: ComponentNode) {
+async function fixLayers(nodes: FrameNode[], parentNode?: SceneNode): Promise<{
+    updated: number;
+    skipped: number;
+    failed: number;
+}> {
     let node,
         parent,
         offsetX,
@@ -88,10 +106,12 @@ async function fixLayers(nodes: FrameNode[], component?: ComponentNode) {
 
             node = nodes.shift();
 
-            if (checkInstance(node, component)) {
+            if (parentNode && checkInstance(node, parentNode)) {
                 skipped++;
                 continue;
             }
+
+            // debugger
 
             parent = node.parent as FrameNode;
             offsetX = node.x;
@@ -99,8 +119,8 @@ async function fixLayers(nodes: FrameNode[], component?: ComponentNode) {
             height = parent.height - 2 * offsetY;
             width = parent.width - 2 * offsetX;
 
-            node.resize(width * 0.8, height * 0.8);
-            await delayAsync(10);
+            // node.resize(width * 0.8, height * 0.8);
+            // await delayAsync(10);
 
             node.resize(width, height);
             updated++;
@@ -113,10 +133,16 @@ async function fixLayers(nodes: FrameNode[], component?: ComponentNode) {
     catch (e) {
         failed++;
     }
+
+    return {
+        updated,
+        skipped,
+        failed 
+    }
 }
 
 function checkInstance(targetFrame, parentFrame?) {
-    if(!parentFrame) {
+    if (!parentFrame) {
         return false;
     }
 

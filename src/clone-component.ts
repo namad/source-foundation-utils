@@ -67,20 +67,94 @@ async function getMasterComponentCopy(node: SceneNode) {
     }
 }
 
-export async function instanceToLocalComponent(currentPageSelection) {
-    let selection = [];
+interface SuggestionRecord {
+    name: string;
+    data: any
+}
+
+export async function readInstanceSwapProperties(currentPageSelection): Promise<{
+    selectedNodeId: string;
+    propName?: string;
+    instanceId?: string|boolean;  
+    instanceName?: string;
+}[] | null> {
+
+
     for (const node of currentPageSelection as SceneNode[]) {
+        if (node.type == 'INSTANCE') {
+
+            let collectedProps = [];    
+
+            const nestedInstances = node.findAllWithCriteria({types: ["INSTANCE"]});
+            const instancesData: {
+                    instanceId: string;
+                    instanceName: string;
+                    masterId: string;
+            }[] = [];
+
+            for(const instanceNode of nestedInstances) {
+                const mainComp = await instanceNode.getMainComponentAsync();
+                instancesData.push({
+                    instanceId: instanceNode.id,
+                    instanceName: instanceNode.name,
+                    masterId: mainComp.id
+                })
+            }
+
+
+            const componentProperties = node.componentProperties;
+
+            for(const componentPropName in componentProperties) {
+                const componentProp = componentProperties[componentPropName];
+                if(componentProp.type == 'INSTANCE_SWAP') {
+
+                    const instanceData = instancesData.find(({instanceId, masterId}) => {
+                        return masterId == componentProp.value;
+                    })
+
+                    collectedProps.push({
+                        selectedNodeId: node.id,
+                        propName: componentPropName.split('#')[0],
+                        instanceId: instanceData.instanceId,
+                        instanceName: instanceData.instanceName
+                    })
+                }
+            }
+
+            if(collectedProps.length) {
+                return collectedProps
+            }
+            debugger;
+
+        }
+    }
+
+    return null;
+    
+
+    // Automatically selects the newly created master and child nodes
+    // FUTURE: Move the master near the child nodes by default
+    // figma.currentPage.selection = selection;
+
+    // Set viewport to cloned nodes
+    // figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection);
+}
+
+
+export async function instanceToLocalComponent(currentPageSelection: SceneNode[]) {
+    let selection = [];
+    for (const node of currentPageSelection) {
         if (node.type == 'INSTANCE') {
             const clone = node.clone().detachInstance();
             const masterCopy = figma.createComponentFromNode(clone);
 
+            node.resetOverrides();
             node.swapComponent(masterCopy);
 
-            // node.swapComponent(masterCopy);
             masterCopy.x = node.absoluteRenderBounds.x + clonedNodeXYOffset;
             masterCopy.y = node.absoluteRenderBounds.y + clonedNodeXYOffset;
 
-            selection.push(masterCopy, node);
+            selection.push(masterCopy);
         }
     }
     // Automatically selects the newly created master and child nodes
