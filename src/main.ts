@@ -36,7 +36,7 @@ const paramsSuggestions = {
 
     figma.parameters.on('input', async ({ parameters, key, query, result }: ParameterInputEvent) => {
         if(key == 'selectionData') {
-            const suggestions = await readInstanceSwapProperties(figma.currentPage.selection);
+            const suggestions = await readInstanceSwapProperties(figma.currentPage.selection as SceneNode[]);
 
             if(suggestions == null) {
                 return result.setSuggestions([{

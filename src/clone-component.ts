@@ -72,7 +72,7 @@ interface SuggestionRecord {
     data: any
 }
 
-export async function readInstanceSwapProperties(currentPageSelection): Promise<{
+export async function readInstanceSwapProperties(currentPageSelection: SceneNode[]): Promise<{
     selectedNodeId: string;
     propName?: string;
     instanceId?: string|boolean;  
@@ -80,24 +80,26 @@ export async function readInstanceSwapProperties(currentPageSelection): Promise<
 }[] | null> {
 
 
-    for (const node of currentPageSelection as SceneNode[]) {
+    for (const node of currentPageSelection) {
         if (node.type == 'INSTANCE') {
 
             let collectedProps = [];    
 
             const nestedInstances = node.findAllWithCriteria({types: ["INSTANCE"]});
-            const instancesData: {
+            const nestedInstancesData: {
                     instanceId: string;
                     instanceName: string;
                     masterId: string;
+                    masterName: string;
             }[] = [];
 
             for(const instanceNode of nestedInstances) {
                 const mainComp = await instanceNode.getMainComponentAsync();
-                instancesData.push({
+                nestedInstancesData.push({
                     instanceId: instanceNode.id,
                     instanceName: instanceNode.name,
-                    masterId: mainComp.id
+                    masterId: mainComp.id,
+                    masterName: mainComp.name
                 })
             }
 
@@ -108,7 +110,7 @@ export async function readInstanceSwapProperties(currentPageSelection): Promise<
                 const componentProp = componentProperties[componentPropName];
                 if(componentProp.type == 'INSTANCE_SWAP') {
 
-                    const instanceData = instancesData.find(({instanceId, masterId}) => {
+                    const instanceData = nestedInstancesData.find(({masterId}) => {
                         return masterId == componentProp.value;
                     })
 
@@ -116,7 +118,7 @@ export async function readInstanceSwapProperties(currentPageSelection): Promise<
                         selectedNodeId: node.id,
                         propName: componentPropName.split('#')[0],
                         instanceId: instanceData.instanceId,
-                        instanceName: instanceData.instanceName
+                        instanceName: instanceData.masterName.split('/').pop().trim()
                     })
                 }
             }
