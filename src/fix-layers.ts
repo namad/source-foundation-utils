@@ -27,16 +27,20 @@ export async function processComponents() {
 
         figma.skipInvisibleInstanceChildren = false;
         const children = componentFrame.findAll((n: FrameNode) => {
-            return n.layoutPositioning == 'ABSOLUTE'
-                && n.width > 0
-                && n.height > 0
-                && n.constraints.horizontal === 'STRETCH'
-                && n.constraints.vertical === 'STRETCH';
+            return getPositionProps(n);
         });
 
         await fixLayers(children as FrameNode[], componentFrame);
         console.log(`%cComponent ${count++} / ${size}`, `color: #0773DF; font-weight: bold;`)
     }
+}
+
+function getPositionProps(node: FrameNode): boolean {
+        return node.layoutPositioning == 'ABSOLUTE'
+            && node.width > 0
+            && node.height > 0
+            && node.constraints?.horizontal === 'STRETCH' || false
+            && node.constraints?.vertical === 'STRETCH' || false;
 }
 
 export async function processFrames() {
@@ -54,11 +58,7 @@ export async function processFrames() {
         figma.currentPage.selection.forEach((parent: SceneNode) => {
             if ('findAll' in parent) {
                 const children = parent.findAll((n: FrameNode) => {
-                    return n.layoutPositioning == 'ABSOLUTE'
-                        && n.width > 0
-                        && n.height > 0
-                        && n.constraints.horizontal === 'STRETCH'
-                        && n.constraints.vertical === 'STRETCH';
+                    return getPositionProps(n);
                 });
 
                 frames.push({ parent, children })
